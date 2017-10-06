@@ -21,19 +21,18 @@ class AbstractAutomata:
 
 
 class State:
-    def __init__(self):
-        self.transitions = dict()
+    def __init__(self, transitions):
+        self.transitions = transitions
         self.reached_call = lambda: None
 
     @classmethod
-    def end_state(cls, reached_call):
-        result = cls()
+    def end_state(cls, transitions, reached_call):
+        result = cls(transitions)
         result.reached_call = reached_call
         return result
 
     def __getitem__(self, item):
-        return self.transitions[item]
-
+        return self.transitions.get(item, 0)
 
 
 class Automata(AbstractAutomata):
@@ -68,3 +67,5 @@ class NDAutomata(AbstractAutomata):
         new_states = self.current_state
         for state in new_states:
             state.reached_call()
+
+
