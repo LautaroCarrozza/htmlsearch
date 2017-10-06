@@ -106,11 +106,11 @@ def eliminate_lambdas(automata):
         closure = lambda_closure(automata, index)
         lambda_states = (automata.states[index] for index in closure)
         for lambda_state in lambda_states:
-            for k, v in lambda_state.transitions.items():
-                if k != LAMBDA:
-                    k_transitions = new_transitions.get(k, [])
-                    k_transitions.extend(v)
-                    new_transitions[k] = k_transitions
+            for transition, destination in lambda_state.transitions.items():
+                if transition != LAMBDA:
+                    destination_states = new_transitions.get(transition, [])
+                    destination_states.extend(destination)
+                    new_transitions[transition] = destination_states
         new_states.append(State.end_state(new_transitions, state.reached_call))
     result.states = new_states
     return result
