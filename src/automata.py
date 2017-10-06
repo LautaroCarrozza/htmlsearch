@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
+LAMBDA = ''
+
 
 class AbstractAutomata:
     __metaclass__ = ABCMeta
@@ -19,6 +21,13 @@ class AbstractAutomata:
     def current_state(self):
         pass
 
+    def __str__(self):
+        result_list = ['q{} => {}'.format(index, state) for index, state in enumerate(self.states)]
+        return '\n'.join(result_list)
+
+    def __repr__(self):
+        return str(self)
+
 
 class State:
     def __init__(self, transitions):
@@ -33,6 +42,12 @@ class State:
 
     def __getitem__(self, item):
         return self.transitions.get(item, 0)
+
+    def __str__(self):
+        return str(self.transitions)
+
+    def __repr__(self):
+        return str(self)
 
 
 class Automata(AbstractAutomata):
@@ -69,3 +84,41 @@ class NDAutomata(AbstractAutomata):
             state.reached_call()
 
 
+def lambda_closure(automata, state_index):
+    closure = {state_index}
+
+    def lambda_closure_aux(state):
+        lambda_transitions = state.transitions.get(LAMBDA, [])
+        for transition in lambda_transitions:
+            if transition not in closure:
+                closure.add(transition)
+                lambda_closure_aux(automata.states[transition])
+
+    lambda_closure_aux(automata.states[state_index])
+    return closure
+
+
+def eliminate_lambdas(automata):
+    result = NDAutomata()
+    new_states = []
+    for index, state in enumerate(automata.states):
+        new_transitions = dict()
+        closure = lambda_closure(automata, index)
+        lambda_states = (automata.states[index] for index in closure)
+        for lambda_state in lambda_states:
+            for k, v in lambda_state.transitions.items():
+                if k != LAMBDA:
+                    k_transitions = new_transitions.get(k, [])
+                    k_transitions.extend(v)
+                    new_transitions[k] = k_transitions
+        new_states.append(State.end_state(new_transitions, state.reached_call))
+    result.states = new_states
+    return result
+
+if __name__ == '__main__':
+    test = NDAutomata()
+    q0 = State(dict([('0', {0}), (LAMBDA, {1})]))
+    q1 = State(dict([('1', {1, 2})]))
+    q2 = State(dict([('2', {2}), (LAMBDA, {1})]))
+    states = [q0, q1, q2]
+    test.states = states
