@@ -16,7 +16,6 @@ class AbstractAutomata:
         pass
 
     @abstractmethod
-    @property
     def current_state(self):
         pass
 
@@ -34,6 +33,7 @@ class State:
 
     def __getitem__(self, item):
         return self.transitions[item]
+
 
 
 class Automata(AbstractAutomata):
