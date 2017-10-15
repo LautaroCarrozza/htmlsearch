@@ -6,8 +6,8 @@ SPACE = ' '
 
 class AbstractAutomata:
     """
-    Abstract class representing the concept of a finite automata, capable of consuming single characters or a stream 
-    of them. 
+    Abstract class representing the concept of a finite automata, capable of consuming single characters or a stream
+    of them.
     """
     __metaclass__ = ABCMeta
 
@@ -18,7 +18,7 @@ class AbstractAutomata:
         """
         Given a stream of characters, consume each of them and mutate the state of the automata
         :param char_stream: stream to be consumed
-        :return: 
+        :return:
         """
         for char in char_stream:
             self.consume(char)
@@ -28,7 +28,7 @@ class AbstractAutomata:
         """
         Given a character mutate the state of the automata
         :param char: character to be consumed
-        :return: 
+        :return:
         """
         pass
 
@@ -81,21 +81,23 @@ class State:
     Helper class representing a single automata state, with transitions and a callback function for end states.
     """
 
-    def __init__(self, default_state=None, is_end_state=False):
-        self.transitions = dict()
+    def __init__(self, default_state=None, is_end_state=False, transitions=None):
+        if transitions is None:
+            transitions = dict()
+        self.transitions = transitions
         self.default_state = default_state
         self.reached_call = lambda: None
-        self.isEndState = is_end_state
+        self.is_end_state = is_end_state
 
     @classmethod
-    def end_state(cls, default_state, reached_call):
+    def end_state(cls, default_state, reached_call, transitions=None):
         """
         Create an end state containing a function to be called when reaching it.
         :param default_state: state to fall back to when given an invalid char
         :param reached_call: function to be called when reaching the state
-        :return: 
+        :return:
         """
-        result = cls(default_state, True)
+        result = cls(default_state, True, transitions)
         result.reached_call = reached_call
         return result
 
@@ -104,9 +106,14 @@ class State:
         Add a transition to a different state
         :param char_key: char to be consumed when transitioning
         :param target: state to go to
-        :return: 
+        :return:
         """
-        self.transitions[char_key] = target
+        prev_targets = self.transitions.get(char_key)
+        if prev_targets is not None:
+            prev_targets.add(target)
+            self.transitions[char_key] = prev_targets
+        else:
+            self.transitions[char_key] = {target}
 
     def get(self, char):
         """
@@ -115,8 +122,8 @@ class State:
         :return: state to transition to
         """
         if self.default_state is None:
-            return self.transitions.get(char, self)
-        return self.transitions.get(char, self.default_state)
+            return self.transitions.get(char, {self})
+        return self.transitions.get(char, {self.default_state})
 
     def __str__(self):
         result = []
@@ -181,29 +188,49 @@ class NDAutomata(AbstractAutomata):
     Represents a Non Deterministic Automata with non determined states that have multiple transitions per consumed char.
     """
 
-    def __init__(self, init_state):
+    def __init__(self, init_state=None):
+        if init_state is None:
+            init_state = State()
         AbstractAutomata.__init__(self, init_state)
         self.current_states = {init_state}
+        self.error_state = State(None, False, dict([(SPACE, {self.init_state})]))
 
     @property
     def current_state(self):
         return self.current_states
 
     def consume(self, char):
-        new_states_indices = []
+        new_states = set()
+        b = False
         for state in self.current_states:
-            new_states_indices.extend(state[char])
-        self.state_indices = set(new_states_indices)
-        new_states = self.current_state
+            if state.is_end_state:
+                b = True
+            else:
+                for st in state.get(char):
+                    new_states.add(st)
+        if b:
+            new_states.update(self.init_state.get(char))
         for state in new_states:
-            state.reached_call()
+            if state.is_end_state:
+                state.reached_call()
+        self.current_states = new_states
+
+
+    def add_word(self, word, reached_call):
+        self.init_state.add_state(word[0], self.__add_word(word, reached_call, 1))
+
+    def __add_word(self, word, reached_call, char_index):
+        if char_index == len(word):
+            return State(self.error_state, False, dict([(SPACE, {State.end_state(self.init_state, reached_call)})]))
+        return State(self.error_state, False,
+                     dict([(word[char_index], {self.__add_word(word, reached_call, char_index + 1)})]))
 
 
 def lambda_closure(state):
     """
     Given a state, returns its LAMBDA closure
-    :param state: 
-    :return: 
+    :param state:
+    :return:
     """
 
     closure = {state}
@@ -223,7 +250,7 @@ def eliminate_lambdas(automata):
     """
     Given a Non Deterministic Automata with LAMBDA transitions, eliminates all LAMBDA transitions
     :param automata: Non Deterministic Automata with LAMBDA transitions
-    :return: 
+    :return:
     """
 
     # TODO don't change the given automata
@@ -304,6 +331,27 @@ def determinize_automata(automata):
 
 
 if __name__ == '__main__':
+
+    nda = NDAutomata()
+    nda.add_word("hola", lambda : print("ull"))
+    nda.add_word("holu", lambda : print("ull"))
+    nda.consume('h')
+    nda.consume('o')
+    nda.consume('l')
+    nda.consume('r')
+    nda.consume('r')
+    nda.consume('h')
+    nda.consume('o')
+    nda.consume('l')
+    nda.consume('u')
+    nda.consume(' ')
+    nda.consume('h')
+    nda.consume('o')
+    nda.consume('l')
+    nda.consume('u')
+    nda.consume(' ')
+
+    """
     q0 = State()
     q1 = State(q0)
     q2 = State(q0)
@@ -326,3 +374,5 @@ if __name__ == '__main__':
     # q1.transitions = q1_trans
     # q2.transitions = q2_trans
     # test = Automata(q0)
+    """
+
