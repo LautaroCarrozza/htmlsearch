@@ -81,11 +81,12 @@ class State:
     Helper class representing a single automata state, with transitions and a callback function for end states.
     """
 
-    def __init__(self, default_state=None, is_end_state=False):
+    def __init__(self, default_state=None, is_end_state=False, name=-1):
         self.transitions = dict()
         self.default_state = default_state
         self.reached_call = lambda: None
         self.isEndState = is_end_state
+        self.name = name
 
     @classmethod
     def end_state(cls, default_state, reached_call):

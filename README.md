@@ -2,9 +2,9 @@
 
 ### Integers
 
-@manu  - yerba consumer
-@wewei - a.k.a Pijel
-@paske - codekillah
+- @manu  - yerba consumer
+- @wewei - a.k.a Pijel
+- @paske - codekillah
 
 ### Specification
 
