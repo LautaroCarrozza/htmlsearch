@@ -17,7 +17,8 @@ def write_dfa(automata):
 
     states = get_automata_states(automata)
 
-    count = 0
+    name = '0'
+    nodes = dict()
 
     for state in states:
         shape = "circle"
@@ -25,18 +26,20 @@ def write_dfa(automata):
         if state.isEndState:
             shape = "doublecircle"
 
-        file.write("node [shape="+shape+"] Node"+state.name+" [label=\""+state.name+"\"]\n")
+        file.write("node [shape="+shape+"] Node"+name+" [label=\""+name+"\"];\n")
+        nodes[state] = name
 
     file.write("\n")
 
+    visited = set()
+
     for state in states:
         transitions = automata.transitions
-        visited = set()
-
-
-
-
-
-
+        actual = '0'
+        for label, transition in transitions:
+            if state not in visited:
+                file.write("Node"+nodes.get(state)+" -> Node"+nodes.get(transition)+" [label=\""+label+"\";")
+        visited.add(state)
 
     file.write("}")
+    file.close()
