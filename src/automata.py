@@ -106,14 +106,18 @@ class NDAutomata(AbstractAutomata):
 
     def __init__(self, init_state=None):
         if init_state is None:
-            init_state = State()
+            init_state = NDState()
         AbstractAutomata.__init__(self, init_state)
         self.current_states = {init_state}
-        self.error_state = State(transitions=dict([
+        self.tag_state = NDState(transitions=dict([
+            (CLOSE_TAG, {self.init_state})
+        ]))
+        self.error_state = NDState(transitions=dict([
             (SPACE, {self.init_state}),
             (ENTER, {self.init_state}),
-            (OPEN_TAG, {self.init_state})
+            (OPEN_TAG, {self.tag_state})
         ]))
+        self.init_state.transitions = dict([(OPEN_TAG, {self.tag_state})])
 
     @property
     def current_state(self):
@@ -139,20 +143,25 @@ class NDAutomata(AbstractAutomata):
 
     def __add_word(self, word, reached_call, char_index):
         if char_index == len(word):
-            final_state = State.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))
-            return State(self.error_state, False, dict([
+            final_state = NDState.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))
+            final_state_with_tag = NDState.end_state(self.tag_state, reached_call, dict([(LAMBDA, {self.tag_state})]))
+            return NDState(self.error_state, False, dict([
                 (SPACE, {final_state}),
                 (ENTER, {final_state}),
-                (OPEN_TAG, {final_state})
+                (OPEN_TAG, {final_state_with_tag})
             ]))
-        return State(self.error_state, False,
-                     dict([(word[char_index], {self.__add_word(word, reached_call, char_index + 1)})]))
+        return NDState(self.error_state, False,
+                       dict([
+                           (word[char_index], {self.__add_word(word, reached_call, char_index + 1)}),
+                           (OPEN_TAG, {self.tag_state})
+                       ]))
 
 
-class State:
+class AbstractState:
     """
     Helper class representing a single automata state, with transitions and a callback function for end states.
     """
+    __metaclass__ = ABCMeta
 
     def __init__(self, default_state=None, is_end_state=False, transitions=None):
         if transitions is None:
@@ -175,6 +184,38 @@ class State:
         result.reached_call = reached_call
         return result
 
+    @abstractmethod
+    def get(self, char):
+        """
+        Given a char return the state to transition to when consuming it
+        :param char: transition char
+        :return: state to transition to
+        """
+        pass
+
+    def __repr__(self):
+        return str(self)
+
+
+class DState(AbstractState):
+    """
+    Represents a Determined State with only one state to transition to per consumed character.
+    """
+
+    def __str__(self):
+        result = []
+        for transition, state in self.transitions.items():
+            string = '{}: {}'.format(transition, id(state))
+            result.append(string)
+        return str(result)
+
+    def get(self, char):
+        if self.default_state is None:
+            return self.transitions.get(char, self)
+        return self.transitions.get(char, self.default_state)
+
+
+class NDState(AbstractState):
     def add_state(self, char_key, target):
         """
         Add a transition to a different state
@@ -189,18 +230,6 @@ class State:
         else:
             self.transitions[char_key] = {target}
 
-    def get(self, char):
-        """
-        Given a char return the state to transition to when consuming it
-        :param char: transition char
-        :return: state to transition to
-        """
-        if char == LAMBDA:
-            return self.transitions.get(LAMBDA, [])
-        if self.default_state is None:
-            return self.transitions.get(char, {self})
-        return self.transitions.get(char, {self.default_state})
-
     def __str__(self):
         result = []
         for transition, states in self.transitions.items():
@@ -209,35 +238,9 @@ class State:
             result.append(string)
         return str(result)
 
-    def __repr__(self):
-        return str(self)
-
-
-class DState(State):
-    """
-    Represents a Determined State with only one state to transition to per consumed character.
-    """
-
-    @classmethod
-    def copy(cls, nd_state):
-        if nd_state.default_state is None:
-            result = cls(is_end_state=nd_state.is_end_state, transitions=nd_state.transitions)
-            return result
-        return cls(nd_state.default_state, nd_state.is_end_state, nd_state.transitions)
-
-    def __str__(self):
-        result = []
-        for transition, state in self.transitions.items():
-            string = '{}: {}'.format(transition, id(state))
-            result.append(string)
-        return str(result)
-
     def get(self, char):
-        """
-        Given a char return the state to transition to when consuming it
-        :param char: transition char
-        :return: state to transition to
-        """
+        if char == LAMBDA:
+            return self.transitions.get(LAMBDA, [])
         if self.default_state is None:
-            return self.transitions.get(char, self)
-        return self.transitions.get(char, self.default_state)
+            return self.transitions.get(char, {self})
+        return self.transitions.get(char, {self.default_state})
