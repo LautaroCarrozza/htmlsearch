@@ -36,6 +36,10 @@ class AbstractAutomata:
         pass
 
     @abstractmethod
+    def reset(self):
+        pass
+
+    @abstractmethod
     def current_state(self):
         pass
 
@@ -67,6 +71,9 @@ class Automata(AbstractAutomata):
     def __init__(self, init_state):
         AbstractAutomata.__init__(self, init_state)
         self.__current_state = init_state
+
+    def reset(self):
+        self.__current_state = self.init_state
 
     def consume(self, char):
         self.__current_state = self.current_state.get(char)
@@ -111,6 +118,9 @@ class NDAutomata(AbstractAutomata):
     @property
     def current_state(self):
         return self.current_states
+
+    def reset(self):
+        self.current_states = {self.init_state}
 
     def consume(self, char):
         new_states = set()
@@ -207,6 +217,7 @@ class DState(State):
     """
     Represents a Determined State with only one state to transition to per consumed character.
     """
+
     @classmethod
     def copy(cls, nd_state):
         if nd_state.default_state is None:
