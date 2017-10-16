@@ -241,11 +241,11 @@ class NDAutomata(AbstractAutomata):
 
     def __add_word(self, word, reached_call, char_index):
         if char_index == len(word):
-            final_state = State.end_state(self.init_state, reached_call, dict([(LAMBDA, {self.init_state})]))
+            final_state = State.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))
             return State(self.error_state, False, dict([
-                (SPACE, {State.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))}),
-                (ENTER, {State.end_state(None, reached_call), dict([(LAMBDA, {self.init_state})])}),
-                (OPEN_TAG, {State.end_state(None, reached_call), dict([(LAMBDA, {self.init_state})])})
+                (SPACE, {final_state}),
+                (ENTER, {final_state}),
+                (OPEN_TAG, {final_state})
             ]))
         return State(self.error_state, False,
                      dict([(word[char_index], {self.__add_word(word, reached_call, char_index + 1)})]))
@@ -339,19 +339,26 @@ def determinize_automata(automata):
 
     state_dict = dict()
 
-    def powerset_construction(ndstate_equivalents, initial_dstate=None):
+    def powerset_construction(ndstate_equivalents, error_state=None):
         if ndstate_equivalents not in state_dict:
             reached_calls = [state.reached_call for state in ndstate_equivalents]
-            if initial_dstate is None:
+
+            if error_state is None:
                 initial_dstate = DState.end_state(default_state=None, reached_call=unify_functions(reached_calls))
+                error_state = DState(transitions=dict([
+                    (SPACE, initial_dstate),
+                    (ENTER, initial_dstate),
+                    (OPEN_TAG, initial_dstate)
+                ]))
+                initial_dstate.default_state = error_state
                 new_state = initial_dstate
             else:
-                new_state = DState.end_state(initial_dstate, unify_functions(reached_calls))
+                new_state = DState.end_state(error_state, unify_functions(reached_calls))
 
             state_dict[ndstate_equivalents] = new_state
 
             for transition, nds_eq in merge_transitions(ndstate_equivalents).items():
-                new_state.transitions[transition] = powerset_construction(frozenset(nds_eq), initial_dstate)
+                new_state.transitions[transition] = powerset_construction(frozenset(nds_eq), error_state)
 
             return new_state
         else:
@@ -364,15 +371,23 @@ if __name__ == '__main__':
     nda = NDAutomata()
     nda.add_word("hola", lambda: print("hola"))
     nda.add_word("holu", lambda: print("holu"))
-    nda.consume_stream('holrrholu holu<')
+    nda.add_word("gesundheit", lambda: print("gesundheit"))
+    nda.add_word("dude", lambda: print("dude"))
+    # nda.consume_stream('holrrholu holu<')
     print()
     eliminate_lambdas(nda)
-    nda.consume_stream('holrrholu holu<')
-    print()
+    # nda.consume_stream('holrrholu holu<')
+    # print('NDA')
+    # print(nda)
+    # print()
     da = determinize_automata(nda)
+    # print('DA')
+    # print(da)
+    # print()
+    # da.consume_stream('holrrholu holu<')
     da.consume_stream('hola hola holu holu ')
-    print()
-    da.consume_stream('holrrholu holu<')
+    da.consume_stream('hola hola holu holu ')
+    da.consume_stream('holy shit dude gesundheit is awesome hola btw')
     # nda.consume('h')
     # nda.consume('o')
     # nda.consume('l')
