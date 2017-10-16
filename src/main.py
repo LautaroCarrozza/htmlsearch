@@ -30,7 +30,7 @@ def read_words(path):
     with open(path) as f:
         for line in f:
             if len(line) > 0:
-                words.add(line)
+                words.add(line.rstrip('\n'))
     return words
 
 
@@ -43,10 +43,10 @@ def build_automata(words):
     return nd_automata, word_counter
 
 
-def consume_files(automata, word_counter, html_files):
-    results = dict()
+def consume_files(automata, word_counter, directory, html_files):
+    results = defaultdict(dict)
     for html_file in html_files:
-        with open(html_file) as f:
+        with open(build_path(directory, html_file)) as f:
             for line in f:
                 automata.consume_stream(line)
         for word, count in word_counter:
@@ -59,11 +59,15 @@ def consume_files(automata, word_counter, html_files):
 def write_results(results, path):
     with open(path, 'w') as file:
         for word, html_dict in results.items():
-            file.write(word)
-            for html_file, count in html_dict:
-                file.write(html_file)
-                file.write(count)
-            file.write("")
+            file.write("{}\n".format(word))
+            for html_file, count in html_dict.items():
+                file.write("{}\n".format(html_file))
+                file.write("{}\n".format(count))
+            file.write("\n")
+
+
+def build_path(directory, file):
+    return "{}\{}".format(directory, file)
 
 
 def main():
@@ -72,7 +76,7 @@ def main():
         sys.exit('Not enough arguments given')
 
     directory = arguments[1]
-    search_file = arguments[2]
+    search_file = build_path(directory, arguments[2])
 
     if not search_file.endswith('.txt'):
         sys.exit('Invalid search file')
@@ -88,10 +92,10 @@ def main():
 
     nd_automata, word_counter = build_automata(words)
     automata = full_determinize(nd_automata)
-    results = consume_files(automata, word_counter, html_files)
+    results = consume_files(automata, word_counter, directory, html_files)
     write_results(results, "index.txt")
 
-    #TODO draw nd_automata and automata
+    # TODO draw nd_automata and automata
 
 
 if __name__ == '__main__':
