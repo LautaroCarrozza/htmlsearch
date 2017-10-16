@@ -208,15 +208,11 @@ class NDAutomata(AbstractAutomata):
 
     def consume(self, char):
         new_states = set()
-        b = False
         for state in self.current_states:
-            if state.is_end_state:
-                b = True
-            else:
-                for st in state.get(char):
-                    new_states.add(st)
-        if b:
-            new_states.update(self.init_state.get(char))
+            for st in state.get(char):
+                new_states.add(st)
+            for st in state.get(LAMBDA):
+                new_states.add(st)
         for state in new_states:
             if state.is_end_state:
                 state.reached_call()
@@ -228,7 +224,7 @@ class NDAutomata(AbstractAutomata):
     def __add_word(self, word, reached_call, char_index):
         if char_index == len(word):
             return State(self.error_state, False, dict([
-                (SPACE, {State.end_state(self.init_state, reached_call)}),
+                (SPACE, {State.end_state(self.init_state, reached_call, dict([(LAMBDA, {self.init_state})]))}),
                 (ENTER, {State.end_state(self.init_state, reached_call)}),
                 (OPEN_TAG, {State.end_state(self.init_state, reached_call)})
             ]))
@@ -345,11 +341,11 @@ if __name__ == '__main__':
     nda = NDAutomata()
     nda.add_word("hola", lambda: print("hola"))
     nda.add_word("holu", lambda: print("holu"))
-    nda.consume_stream('holrrholu holu<')
-    eliminate_lambdas(nda)
-    nda.consume_stream('holrrholu holu<')
-    da = determinize_automata(nda)
-    da.consume_stream('holrrholu holu<')
+    nda.consume_stream('hola hola holu holu ')
+    #eliminate_lambdas(nda)
+    #nda.consume_stream('holrrholu holu<')
+    #da = determinize_automata(nda)
+    #da.consume_stream('holrrholu holu<')
     # nda.consume('h')
     # nda.consume('o')
     # nda.consume('l')
