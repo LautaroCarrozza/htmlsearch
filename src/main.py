@@ -1,6 +1,7 @@
 import sys
 import os
 from src.automata import *
+from src.automata_util import *
 from collections import defaultdict
 
 
@@ -11,11 +12,6 @@ def read_words(path):
             if len(line) > 0:
                 words.add(line)
     return words
-
-def determinize(automata):
-    eliminate_lambdas(automata)
-    determinize_automata(automata)
-    return automata
 
 
 def build_automata(words, html_files):
@@ -80,7 +76,7 @@ if __name__ == '__main__':
 
     automata = build_automata(words)
     #TODO call method to draw nd_automata here
-    automata = determinize_automata(automata)
+    automata = full_determinize(automata)
     #TODO call method to draw automata here
 
 

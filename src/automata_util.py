@@ -135,3 +135,8 @@ def determinize_automata(automata):
             return state_dict[ndstate_equivalents]
 
     return Automata(powerset_construction(frozenset({automata.init_state})))
+
+
+def full_determinize(automata):
+    eliminate_lambdas(automata)
+    return determinize_automata(automata)
