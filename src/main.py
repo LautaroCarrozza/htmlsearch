@@ -17,22 +17,23 @@ def determinize(automata):
     return automata
 
 
-def build_automata(words, result_dict):
-    #TODO build lamda with result_dict
+def build_automata(words, html_files):
     nd_automata = NDAutomata()
     for word in words:
+        #TODO build lamda with html_files
         nd_automata.add_word(word) #TODO add lamda as parameter
     return nd_automata
 
 
 '''
-def consume_files(automata, html_list):
+def consume_files(automata, html_files):
     result = dict()
-    for html_file in html_list:
-        with open(html_list) as f:
+    for html_file in html_files:
+        with open(html_file) as f:
             for line in f:
-
+ 
 '''
+
 
 
 
