@@ -59,24 +59,84 @@ class AbstractAutomata:
         return str(self)
 
 
-def get_automata_states(automata):
+class Automata(AbstractAutomata):
     """
-    Given an automata, returns a list with all its states.
-    :param automata: automata to get the states from.
-    :return: list with the automata states.
+    Represents a Deterministic Automata with only Determined states to transition to
     """
-    states = []
-    next_states = []
-    __get_automata_states(automata.init_state, states, next_states)
+
+    def __init__(self, init_state):
+        AbstractAutomata.__init__(self, init_state)
+        self.__current_state = init_state
+
+    def consume(self, char):
+        self.__current_state = self.current_state.get(char)
+        self.__current_state.reached_call()
+
+    @property
+    def current_state(self):
+        return self.__current_state
+
+    def __str__(self):
+        result_list = []
+        visited = set()
+
+        def traverse(state_aux, counter):
+            string = '{} => {}'.format(id(state_aux), state_aux)
+            result_list.append(string)
+            visited.add(state_aux)
+            for state in state_aux.transitions.values():
+                if state not in visited:
+                    traverse(state, counter + 1)
+
+        traverse(self.init_state, 0)
+        return '\n'.join(result_list)
 
 
-def __get_automata_states(current_state, states, next_states):
-    if current_state not in states:
-        states.append(current_state)
-        next_states.append(current_state.transitions.values())
-    if next_states:
-        __get_automata_states(next_states.pop(), states, next_states)
-    return states
+class NDAutomata(AbstractAutomata):
+    """
+    Represents a Non Deterministic Automata with non determined states that have multiple transitions per consumed char.
+    """
+
+    def __init__(self, init_state=None):
+        if init_state is None:
+            init_state = State()
+        AbstractAutomata.__init__(self, init_state)
+        self.current_states = {init_state}
+        self.error_state = State(transitions=dict([
+            (SPACE, {self.init_state}),
+            (ENTER, {self.init_state}),
+            (OPEN_TAG, {self.init_state})
+        ]))
+
+    @property
+    def current_state(self):
+        return self.current_states
+
+    def consume(self, char):
+        new_states = set()
+        for state in self.current_states:
+            for st in state.get(char):
+                new_states.add(st)
+            for st in state.get(LAMBDA):
+                new_states.add(st)
+        for state in new_states:
+            if state.is_end_state:
+                state.reached_call()
+        self.current_states = new_states
+
+    def add_word(self, word, reached_call):
+        self.init_state.add_state(word[0], self.__add_word(word, reached_call, 1))
+
+    def __add_word(self, word, reached_call, char_index):
+        if char_index == len(word):
+            final_state = State.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))
+            return State(self.error_state, False, dict([
+                (SPACE, {final_state}),
+                (ENTER, {final_state}),
+                (OPEN_TAG, {final_state})
+            ]))
+        return State(self.error_state, False,
+                     dict([(word[char_index], {self.__add_word(word, reached_call, char_index + 1)})]))
 
 
 class State:
@@ -169,262 +229,3 @@ class DState(State):
         if self.default_state is None:
             return self.transitions.get(char, self)
         return self.transitions.get(char, self.default_state)
-
-
-class Automata(AbstractAutomata):
-    """
-    Represents a Deterministic Automata with only Determined states to transition to
-    """
-
-    def __init__(self, init_state):
-        AbstractAutomata.__init__(self, init_state)
-        self.__current_state = init_state
-
-    def consume(self, char):
-        self.__current_state = self.current_state.get(char)
-        self.__current_state.reached_call()
-
-    @property
-    def current_state(self):
-        return self.__current_state
-
-    def __str__(self):
-        result_list = []
-        visited = set()
-
-        def traverse(state_aux, counter):
-            string = '{} => {}'.format(id(state_aux), state_aux)
-            result_list.append(string)
-            visited.add(state_aux)
-            for state in state_aux.transitions.values():
-                if state not in visited:
-                    traverse(state, counter + 1)
-
-        traverse(self.init_state, 0)
-        return '\n'.join(result_list)
-
-
-class NDAutomata(AbstractAutomata):
-    """
-    Represents a Non Deterministic Automata with non determined states that have multiple transitions per consumed char.
-    """
-
-    def __init__(self, init_state=None):
-        if init_state is None:
-            init_state = State()
-        AbstractAutomata.__init__(self, init_state)
-        self.current_states = {init_state}
-        self.error_state = State(transitions=dict([
-            (SPACE, {self.init_state}),
-            (ENTER, {self.init_state}),
-            (OPEN_TAG, {self.init_state})
-        ]))
-
-    @property
-    def current_state(self):
-        return self.current_states
-
-    def consume(self, char):
-        new_states = set()
-        for state in self.current_states:
-            for st in state.get(char):
-                new_states.add(st)
-            for st in state.get(LAMBDA):
-                new_states.add(st)
-        for state in new_states:
-            if state.is_end_state:
-                state.reached_call()
-        self.current_states = new_states
-
-    def add_word(self, word, reached_call):
-        self.init_state.add_state(word[0], self.__add_word(word, reached_call, 1))
-
-    def __add_word(self, word, reached_call, char_index):
-        if char_index == len(word):
-            final_state = State.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))
-            return State(self.error_state, False, dict([
-                (SPACE, {final_state}),
-                (ENTER, {final_state}),
-                (OPEN_TAG, {final_state})
-            ]))
-        return State(self.error_state, False,
-                     dict([(word[char_index], {self.__add_word(word, reached_call, char_index + 1)})]))
-
-
-def lambda_closure(state):
-    """
-    Given a state, returns its LAMBDA closure
-    :param state:
-    :return:
-    """
-
-    closure = {state}
-
-    def lambda_closure_aux(state_aux):
-        lambda_transitions = state_aux.get(LAMBDA)
-        for transition in lambda_transitions:
-            if transition not in closure:
-                closure.add(transition)
-                lambda_closure_aux(transition)
-
-    lambda_closure_aux(state)
-    return closure
-
-
-def eliminate_lambdas(automata):
-    """
-    Given a Non Deterministic Automata with LAMBDA transitions, eliminates all LAMBDA transitions
-    :param automata: Non Deterministic Automata with LAMBDA transitions
-    :return:
-    """
-
-    # TODO don't change the given automata
-    visited = set()
-
-    def eliminate_lambda_aux(state):
-        new_transitions = dict()
-        closure = lambda_closure(state)
-        for lambda_state in closure:
-            for transition, destination in lambda_state.transitions.items():
-                if transition != LAMBDA:
-                    destination_states = new_transitions.get(transition, [])
-                    destination_states.extend(destination)
-                    new_transitions[transition] = destination_states
-        state.transitions = new_transitions
-        visited.add(state)
-        for transition, states in state.transitions.items():
-            for state in states:
-                if state not in visited:
-                    eliminate_lambda_aux(state)
-
-    eliminate_lambda_aux(automata.init_state)
-
-
-def unify_functions(funcs):
-    """
-    Given a list of functions returns a single function that calls all of them
-    :param funcs: function iterable
-    :return: single function calling all in list
-    """
-
-    def call_all():
-        for func in funcs:
-            func()
-
-    return call_all
-
-
-def merge_transitions(states):
-    """
-    Given a set of states, returns a dictionary with the combined transitions.
-    :param states: set of states
-    :return: combined transition dictionary
-    """
-
-    result_transitions = dict()
-    for state in states:
-        for transition, states_set in state.transitions.items():
-            actual_transitions = result_transitions.get(transition, set())
-            actual_transitions.update(states_set)
-            result_transitions[transition] = actual_transitions
-    return result_transitions
-
-
-def determinize_automata(automata):
-    """
-    Given a Non Deterministic Automata, without LAMBDA transitions, returns an equivalent Deterministic Automata
-    :param automata: non deterministic automata
-    :return: equivalent deterministic automata
-    """
-
-    state_dict = dict()
-
-    def powerset_construction(ndstate_equivalents, error_state=None):
-        if ndstate_equivalents not in state_dict:
-            reached_calls = [state.reached_call for state in ndstate_equivalents]
-
-            if error_state is None:
-                initial_dstate = DState.end_state(default_state=None, reached_call=unify_functions(reached_calls))
-                error_state = DState(transitions=dict([
-                    (SPACE, initial_dstate),
-                    (ENTER, initial_dstate),
-                    (OPEN_TAG, initial_dstate)
-                ]))
-                initial_dstate.default_state = error_state
-                new_state = initial_dstate
-            else:
-                new_state = DState.end_state(error_state, unify_functions(reached_calls))
-
-            state_dict[ndstate_equivalents] = new_state
-
-            for transition, nds_eq in merge_transitions(ndstate_equivalents).items():
-                new_state.transitions[transition] = powerset_construction(frozenset(nds_eq), error_state)
-
-            return new_state
-        else:
-            return state_dict[ndstate_equivalents]
-
-    return Automata(powerset_construction(frozenset({automata.init_state})))
-
-
-if __name__ == '__main__':
-    nda = NDAutomata()
-    nda.add_word("hola", lambda: print("hola"))
-    nda.add_word("holu", lambda: print("holu"))
-    nda.add_word("gesundheit", lambda: print("gesundheit"))
-    nda.add_word("dude", lambda: print("dude"))
-    # nda.consume_stream('holrrholu holu<')
-    print()
-    eliminate_lambdas(nda)
-    # nda.consume_stream('holrrholu holu<')
-    # print('NDA')
-    # print(nda)
-    # print()
-    da = determinize_automata(nda)
-    # print('DA')
-    # print(da)
-    # print()
-    # da.consume_stream('holrrholu holu<')
-    da.consume_stream('hola hola holu holu ')
-    da.consume_stream('hola hola holu holu ')
-    da.consume_stream('holy shit dude gesundheit is awesome hola btw')
-    # nda.consume('h')
-    # nda.consume('o')
-    # nda.consume('l')
-    # nda.consume('r')
-    # nda.consume('r')
-    # nda.consume('h')
-    # nda.consume('o')
-    # nda.consume('l')
-    # nda.consume('u')
-    # nda.consume(' ')
-    # nda.consume('h')
-    # nda.consume('o')
-    # nda.consume('l')
-    # nda.consume('u')
-    # nda.consume(' ')
-
-    """
-    q0 = State()
-    q1 = State(q0)
-    q2 = State(q0)
-    # NDAutomata
-    q0_trans = dict([('0', {q0}), (LAMBDA, {q1})])
-    q1_trans = dict([('1', {q1, q2})])
-    q2_trans = dict([('2', {q2}), (LAMBDA, {q1})])
-    q0.transitions = q0_trans
-    q1.transitions = q1_trans
-    q2.transitions = q2_trans
-    test = NDAutomata(q0)
-    eliminate_lambdas(test)
-    d_test = determinize_automata(test)
-    print(d_test)
-    # Automata
-    # q0_trans = dict([('0', {q1})])
-    # q1_trans = dict([('1', {q1}), ('2', {q2})])
-    # q2_trans = dict([('2', {q2})])
-    # q0.transitions = q0_trans
-    # q1.transitions = q1_trans
-    # q2.transitions = q2_trans
-    # test = Automata(q0)
-    """
