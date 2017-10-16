@@ -63,6 +63,7 @@ def write_results(results, path):
             for html_file, count in html_dict:
                 file.write(html_file)
                 file.write(count)
+            file.write("")
 
 
 def main():
