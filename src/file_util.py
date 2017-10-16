@@ -3,7 +3,7 @@
 # node [shape=doublecircle] Node8 [label="8"]; END NODE
 # Node0 -> Node8 [label="a/b"]; a/b TRANSITION from 0 to 8
 
-from automata import get_automata_states
+from automata_util import get_automata_states
 
 
 def write_nfa(automata):

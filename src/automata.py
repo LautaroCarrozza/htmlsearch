@@ -156,6 +156,7 @@ class State:
     def end_state(cls, default_state, reached_call, transitions=None):
         """
         Create an end state containing a function to be called when reaching it.
+        :param transitions: state transitions dict
         :param default_state: state to fall back to when given an invalid char
         :param reached_call: function to be called when reaching the state
         :return:

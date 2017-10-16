@@ -1,4 +1,5 @@
 from src.automata import *
+import copy
 
 
 def get_automata_states(automata):
@@ -43,13 +44,14 @@ def lambda_closure(state):
 
 def eliminate_lambdas(automata):
     """
-    Given a Non Deterministic Automata with LAMBDA transitions, eliminates all LAMBDA transitions
-    :param automata: Non Deterministic Automata with LAMBDA transitions
-    :return:
+    Given a Non Deterministic Automata with LAMBDA transitions, returns an equivalent Non Deterministic Automata 
+    without LAMBDA transitions
+    :param automata: NDAutomata with LAMBDA transitions
+    :return: NDAutomata without LAMBDA transitions
     """
 
-    # TODO don't change the given automata
     visited = set()
+    result_automata = copy.deepcopy(automata)
 
     def eliminate_lambda_aux(state):
         new_transitions = dict()
@@ -63,11 +65,12 @@ def eliminate_lambdas(automata):
         state.transitions = new_transitions
         visited.add(state)
         for transition, states in state.transitions.items():
-            for state in states:
-                if state not in visited:
-                    eliminate_lambda_aux(state)
+            for transition_state in states:
+                if transition_state not in visited:
+                    eliminate_lambda_aux(transition_state)
 
-    eliminate_lambda_aux(automata.init_state)
+    eliminate_lambda_aux(result_automata.init_state)
+    return result_automata
 
 
 def unify_functions(funcs):
@@ -138,5 +141,4 @@ def determinize_automata(automata):
 
 
 def full_determinize(automata):
-    eliminate_lambdas(automata)
-    return determinize_automata(automata)
+    return determinize_automata(eliminate_lambdas(automata))
