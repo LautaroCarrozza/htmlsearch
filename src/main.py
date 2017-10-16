@@ -1,6 +1,7 @@
 import sys
 import os
 from src.automata import *
+from collections import defaultdict
 
 
 def read_words(path):
@@ -35,6 +36,26 @@ def consume_files(automata, html_files):
 '''
 
 
+class WordCounter:
+
+    def __init__(self):
+        self.counter = defaultdict(int)
+
+    def add_counter(self, word):
+
+        def counter_fun():
+            self.counter[word] += 1
+
+        return counter_fun
+
+    def reset(self):
+        for key in self.counter:
+            self.counter[key] = 0
+
+    def __iter__(self):
+        for word, count in self.counter.items():
+            if count != 0:
+                yield word, count
 
 
 if __name__ == '__main__':
