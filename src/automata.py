@@ -2,6 +2,9 @@ from abc import ABCMeta, abstractmethod
 
 LAMBDA = ''
 SPACE = ' '
+ENTER = '\n'
+OPEN_TAG = '<'
+CLOSE_TAG = '>'
 
 
 class AbstractAutomata:
@@ -194,7 +197,11 @@ class NDAutomata(AbstractAutomata):
             init_state = State()
         AbstractAutomata.__init__(self, init_state)
         self.current_states = {init_state}
-        self.error_state = State(None, False, dict([(SPACE, {self.init_state})]))
+        self.error_state = State(transitions=dict([
+            (SPACE, {self.init_state}),
+            (ENTER, {self.init_state}),
+            (OPEN_TAG, {self.init_state})
+        ]))
 
     @property
     def current_state(self):
@@ -202,27 +209,26 @@ class NDAutomata(AbstractAutomata):
 
     def consume(self, char):
         new_states = set()
-        b = False
         for state in self.current_states:
-            if state.is_end_state:
-                b = True
-            else:
-                for st in state.get(char):
-                    new_states.add(st)
-        if b:
-            new_states.update(self.init_state.get(char))
+            for st in state.get(char):
+                new_states.add(st)
+            for st in state.get(LAMBDA):
+                new_states.add(st)
         for state in new_states:
             if state.is_end_state:
                 state.reached_call()
         self.current_states = new_states
-
 
     def add_word(self, word, reached_call):
         self.init_state.add_state(word[0], self.__add_word(word, reached_call, 1))
 
     def __add_word(self, word, reached_call, char_index):
         if char_index == len(word):
-            return State(self.error_state, False, dict([(SPACE, {State.end_state(self.init_state, reached_call)})]))
+            return State(self.error_state, False, dict([
+                (SPACE, {State.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))}),
+                (ENTER, {State.end_state(None, reached_call), dict([(LAMBDA, {self.init_state})])}),
+                (OPEN_TAG, {State.end_state(None, reached_call), dict([(LAMBDA, {self.init_state})])})
+            ]))
         return State(self.error_state, False,
                      dict([(word[char_index], {self.__add_word(word, reached_call, char_index + 1)})]))
 
@@ -334,23 +340,28 @@ def determinize_automata(automata):
 if __name__ == '__main__':
 
     nda = NDAutomata()
-    nda.add_word("hola", lambda : print("ull"))
-    nda.add_word("holu", lambda : print("ull"))
-    nda.consume('h')
-    nda.consume('o')
-    nda.consume('l')
-    nda.consume('r')
-    nda.consume('r')
-    nda.consume('h')
-    nda.consume('o')
-    nda.consume('l')
-    nda.consume('u')
-    nda.consume(' ')
-    nda.consume('h')
-    nda.consume('o')
-    nda.consume('l')
-    nda.consume('u')
-    nda.consume(' ')
+    nda.add_word("hola", lambda: print("hola"))
+    nda.add_word("holu", lambda: print("holu"))
+    nda.consume_stream('holrrholu holu<')
+    #eliminate_lambdas(nda)
+    #da = determinize_automata(nda)
+    #da.consume_stream('holrrholu holu<')
+    # nda.consume_stream('hola hola holu holu ')
+    # nda.consume('h')
+    # nda.consume('o')
+    # nda.consume('l')
+    # nda.consume('r')
+    # nda.consume('r')
+    # nda.consume('h')
+    # nda.consume('o')
+    # nda.consume('l')
+    # nda.consume('u')
+    # nda.consume(' ')
+    # nda.consume('h')
+    # nda.consume('o')
+    # nda.consume('l')
+    # nda.consume('u')
+    # nda.consume(' ')
 
     """
     q0 = State()
