@@ -124,6 +124,8 @@ class State:
         :param char: transition char
         :return: state to transition to
         """
+        if char == LAMBDA:
+            return self.transitions.get(LAMBDA, [])
         if self.default_state is None:
             return self.transitions.get(char, {self})
         return self.transitions.get(char, {self.default_state})
@@ -144,6 +146,12 @@ class DState(State):
     """
     Represents a Determined State with only one state to transition to per consumed character.
     """
+    @classmethod
+    def copy(cls, nd_state):
+        if nd_state.default_state is None:
+            result = cls(is_end_state=nd_state.is_end_state, transitions=nd_state.transitions)
+            return result
+        return cls(nd_state.default_state, nd_state.is_end_state, nd_state.transitions)
 
     def __str__(self):
         result = []
@@ -151,6 +159,16 @@ class DState(State):
             string = '{}: {}'.format(transition, id(state))
             result.append(string)
         return str(result)
+
+    def get(self, char):
+        """
+        Given a char return the state to transition to when consuming it
+        :param char: transition char
+        :return: state to transition to
+        """
+        if self.default_state is None:
+            return self.transitions.get(char, self)
+        return self.transitions.get(char, self.default_state)
 
 
 class Automata(AbstractAutomata):
@@ -223,6 +241,7 @@ class NDAutomata(AbstractAutomata):
 
     def __add_word(self, word, reached_call, char_index):
         if char_index == len(word):
+            final_state = State.end_state(self.init_state, reached_call, dict([(LAMBDA, {self.init_state})]))
             return State(self.error_state, False, dict([
                 (SPACE, {State.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))}),
                 (ENTER, {State.end_state(None, reached_call), dict([(LAMBDA, {self.init_state})])}),
@@ -242,7 +261,7 @@ def lambda_closure(state):
     closure = {state}
 
     def lambda_closure_aux(state_aux):
-        lambda_transitions = state_aux.transitions.get(LAMBDA, [])
+        lambda_transitions = state_aux.get(LAMBDA)
         for transition in lambda_transitions:
             if transition not in closure:
                 closure.add(transition)
@@ -320,14 +339,19 @@ def determinize_automata(automata):
 
     state_dict = dict()
 
-    def powerset_construction(ndstate_equivalents):
+    def powerset_construction(ndstate_equivalents, initial_dstate=None):
         if ndstate_equivalents not in state_dict:
             reached_calls = [state.reached_call for state in ndstate_equivalents]
-            new_state = DState.end_state(automata.init_state, unify_functions(reached_calls))
+            if initial_dstate is None:
+                initial_dstate = DState.end_state(default_state=None, reached_call=unify_functions(reached_calls))
+                new_state = initial_dstate
+            else:
+                new_state = DState.end_state(initial_dstate, unify_functions(reached_calls))
+
             state_dict[ndstate_equivalents] = new_state
 
             for transition, nds_eq in merge_transitions(ndstate_equivalents).items():
-                new_state.transitions[transition] = powerset_construction(frozenset(nds_eq))
+                new_state.transitions[transition] = powerset_construction(frozenset(nds_eq), initial_dstate)
 
             return new_state
         else:
@@ -337,15 +361,18 @@ def determinize_automata(automata):
 
 
 if __name__ == '__main__':
-
     nda = NDAutomata()
     nda.add_word("hola", lambda: print("hola"))
     nda.add_word("holu", lambda: print("holu"))
     nda.consume_stream('holrrholu holu<')
-    #eliminate_lambdas(nda)
-    #da = determinize_automata(nda)
-    #da.consume_stream('holrrholu holu<')
-    # nda.consume_stream('hola hola holu holu ')
+    print()
+    eliminate_lambdas(nda)
+    nda.consume_stream('holrrholu holu<')
+    print()
+    da = determinize_automata(nda)
+    da.consume_stream('hola hola holu holu ')
+    print()
+    da.consume_stream('holrrholu holu<')
     # nda.consume('h')
     # nda.consume('o')
     # nda.consume('l')
@@ -386,4 +413,3 @@ if __name__ == '__main__':
     # q2.transitions = q2_trans
     # test = Automata(q0)
     """
-
