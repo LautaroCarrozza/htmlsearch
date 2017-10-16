@@ -130,9 +130,11 @@ class NDAutomata(AbstractAutomata):
         new_states = set()
         for state in self.current_states:
             for st in state.get(char):
-                new_states.add(st)
+                if not (state.is_end_state and st == state):
+                    new_states.add(st)
             for st in state.get(LAMBDA):
-                new_states.add(st)
+                for s in st.get(char):
+                    new_states.add(s)
         for state in new_states:
             if state.is_end_state:
                 state.reached_call()
