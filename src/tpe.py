@@ -5,17 +5,30 @@ from collections import defaultdict
 
 
 class WordCounter:
+    """
+    Dictionary wrapper that contains words as keys and the number that word appears as values.
+    When adding a word, it returns a function that adds 1 to the number that word appears.
+    Can be iterated for a word - counter tuple for all words whose counter is greater than 0.
+    """
     def __init__(self):
         self.counter = defaultdict(int)
 
     def add_counter(self, word):
-
+        """
+        Adds a word to the dictionary for counting and return a function to update the count number
+        :param word: word to count
+        :return: function that adds 1 to the word counter
+        """
         def counter_fun():
             self.counter[word] += 1
 
         return counter_fun
 
     def reset(self):
+        """
+        Resets all counters to 0
+        :return: 
+        """
         for key in self.counter:
             self.counter[key] = 0
 

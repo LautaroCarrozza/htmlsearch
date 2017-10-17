@@ -141,4 +141,9 @@ def determinize_automata(automata):
 
 
 def full_determinize(automata):
+    """
+    Given a Non Deterministic Automata, returns an equivalent Deterministic Automata
+    :param automata: NDAutomata to determinize
+    :return: Deterministic Automata equivalent to the given automata
+    """
     return determinize_automata(eliminate_lambdas(automata))
