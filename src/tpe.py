@@ -1,6 +1,6 @@
 import sys
 import os
-from src.automata_util import *
+from automata_util import *
 from collections import defaultdict
 
 

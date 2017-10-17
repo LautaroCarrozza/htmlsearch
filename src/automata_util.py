@@ -1,4 +1,4 @@
-from src.automata import *
+from automata import *
 import copy
 
 
