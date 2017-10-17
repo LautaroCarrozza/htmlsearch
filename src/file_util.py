@@ -4,20 +4,13 @@ from automata import DState, NDState, SPACE, LAMBDA, ENTER
 ProcessedTransition = namedtuple('transition', 'to key')
 ProcessedState = namedtuple('state', 'id is_end transitions')
 
-# class processedTransition:
-#     def __init__(self, to, key):
-#         self.to = to
-#         self.key = key
-#
-#
-# class processedState:
-#     def __init__(self, id, is_end, transitions):
-#         self.id = id
-#         self.is_end = is_end
-#         self.transitions = transitions
-
 
 def process_states(states):
+    """
+    Takes a list of states and returns a generator with their equivalent, ready to be graphed.
+    :param states: list of states
+    :return: generator of processed states
+    """
     id_dict = dict()
     for state in states:
         old_id = id(state)
@@ -27,9 +20,9 @@ def process_states(states):
         for key, to in state.transitions.items():
             actual_key = key
             if actual_key == LAMBDA:
-                actual_key = 'LMB'
+                actual_key = 'LAMBDA'
             elif actual_key == ENTER:
-                actual_key = 'ENTR'
+                actual_key = 'ENTER'
             elif actual_key == SPACE:
                 actual_key = 'SPC'
             if isinstance(state, DState):
@@ -45,6 +38,11 @@ def process_states(states):
 
 
 def write_automata(states, path):
+    """
+    Given states and a file path writes the graphviz specification of the states
+    :param states: list of automata states
+    :param path: path to save file
+    """
     transitions = []
     with open(path, 'w+') as file:
         file.write("digraph { \n")

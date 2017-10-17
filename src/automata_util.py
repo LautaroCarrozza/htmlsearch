@@ -32,8 +32,8 @@ def __get_automata_states(current_state, states, next_states):
 def lambda_closure(state):
     """
     Given a state, returns its LAMBDA closure
-    :param state:
-    :return:
+    :param state: state with LAMBDA transitions
+    :return: LAMBDA closure
     """
 
     closure = {state}
