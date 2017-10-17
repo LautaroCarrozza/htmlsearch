@@ -21,7 +21,7 @@ def process_states(states):
 
     def filter_builtins(a_key):
         if a_key == LAMBDA:
-            return 'LAMBDA'
+            return u'\u03bb'
         elif a_key == ENTER:
             return 'ENTER'
         elif a_key == SPACE:
@@ -54,7 +54,7 @@ def write_automata(states, path):
     :param path: path to save file
     """
     transitions = []
-    with open(path, 'w+') as file:
+    with open(path, 'w+', encoding='utf-8') as file:
         file.write("digraph { \n")
         file.write("rankdir = \"LR\" \n")
         for state in states:
