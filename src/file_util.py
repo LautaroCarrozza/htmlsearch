@@ -33,13 +33,13 @@ def process_states(states):
             elif actual_key == SPACE:
                 actual_key = 'SPC'
             if isinstance(state, DState):
-                to_id = id_dict.get(to, len(id_dict))
-                id_dict[to] = to_id
-                transition_list.append(ProcessedTransition(actual_key, to_id))
+                to_id = id_dict.get(id(to), len(id_dict))
+                id_dict[id(to)] = to_id
+                transition_list.append(ProcessedTransition(to_id, actual_key))
             elif isinstance(state, NDState):
                 for transition in to:
-                    trans_id = id_dict.get(transition, len(id_dict))
-                    id_dict[transition] = trans_id
+                    trans_id = id_dict.get(id(transition), len(id_dict))
+                    id_dict[id(transition)] = trans_id
                     transition_list.append(ProcessedTransition(trans_id, actual_key))
         yield ProcessedState(new_id, state.is_end_state, transition_list)
 

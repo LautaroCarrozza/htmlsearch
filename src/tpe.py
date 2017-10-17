@@ -110,11 +110,11 @@ def main():
     nd_states = process_states(get_automata_states(nd_automata))
     d_states = process_states(get_automata_states(automata))
 
-    write_automata(nd_states, "nfa.dot")
-    write_automata(d_states, "dfa.dot")
+    write_automata(nd_states, build_path(directory, 'nfa.dot'))
+    write_automata(d_states, build_path(directory, 'dfa.dot'))
 
     results = consume_files(automata, word_counter, directory, html_files)
-    write_results(results, "index.txt")
+    write_results(results, build_path(directory, 'index.txt'))
 
 
 if __name__ == '__main__':
