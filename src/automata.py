@@ -36,10 +36,6 @@ class AbstractAutomata:
         pass
 
     @abstractmethod
-    def reset(self):
-        pass
-
-    @abstractmethod
     def current_state(self):
         pass
 
@@ -71,9 +67,6 @@ class Automata(AbstractAutomata):
     def __init__(self, init_state):
         AbstractAutomata.__init__(self, init_state)
         self.__current_state = init_state
-
-    def reset(self):
-        self.__current_state = self.init_state
 
     def consume(self, char):
         self.__current_state = self.current_state.get(char)
@@ -122,9 +115,6 @@ class NDAutomata(AbstractAutomata):
     @property
     def current_state(self):
         return self.current_states
-
-    def reset(self):
-        self.current_states = {self.init_state}
 
     def consume(self, char):
         new_states = set()
