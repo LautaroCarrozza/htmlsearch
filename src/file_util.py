@@ -12,29 +12,39 @@ def process_states(states):
     :return: generator of processed states
     """
     id_dict = dict()
+
+    def get_state_id(a_state):
+        old_id = id(a_state)
+        result_id = id_dict.get(old_id, len(id_dict))
+        id_dict[old_id] = result_id
+        return result_id
+
+    def filter_builtins(a_key):
+        if a_key == LAMBDA:
+            return 'LAMBDA'
+        elif a_key == ENTER:
+            return 'ENTER'
+        elif a_key == SPACE:
+            return 'SPC'
+        else:
+            return key
+
     for state in states:
-        old_id = id(state)
-        new_id = id_dict.get(id(state), len(id_dict))
-        id_dict[old_id] = new_id
+        state_id = get_state_id(state)
         transition_list = []
         for key, to in state.transitions.items():
-            actual_key = key
-            if actual_key == LAMBDA:
-                actual_key = 'LAMBDA'
-            elif actual_key == ENTER:
-                actual_key = 'ENTER'
-            elif actual_key == SPACE:
-                actual_key = 'SPC'
+            actual_key = filter_builtins(key)
             if isinstance(state, DState):
-                to_id = id_dict.get(id(to), len(id_dict))
-                id_dict[id(to)] = to_id
+                to_id = get_state_id(to)
                 transition_list.append(ProcessedTransition(to_id, actual_key))
             elif isinstance(state, NDState):
                 for transition in to:
-                    trans_id = id_dict.get(id(transition), len(id_dict))
-                    id_dict[id(transition)] = trans_id
+                    trans_id = get_state_id(transition)
                     transition_list.append(ProcessedTransition(trans_id, actual_key))
-        yield ProcessedState(new_id, state.is_end_state, transition_list)
+            if state.default_state is not None:
+                default_id = get_state_id(state.default_state)
+                transition_list.append(ProcessedTransition(default_id, 'OTHER'))
+        yield ProcessedState(state_id, state.is_end_state, transition_list)
 
 
 def write_automata(states, path):
@@ -56,6 +66,6 @@ def write_automata(states, path):
                 transitions.append("Node{} -> Node{} [label=\"{}\"];\n".format(state.id, transition.to, transition.key))
 
         file.write("\n\n")
-        for transition_str in transitions:
+        for transition_str in set(transitions):
             file.write(transition_str)
         file.write("\n}")

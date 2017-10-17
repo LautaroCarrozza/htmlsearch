@@ -24,6 +24,8 @@ def __get_automata_states(current_state, states, next_states):
                     next_states.append(trans)
             elif isinstance(current_state, DState):
                 next_states.append(transition)
+        if current_state.default_state is not None:
+            next_states.append(current_state.default_state)
     if next_states:
         __get_automata_states(next_states.pop(), states, next_states)
     return states
