@@ -1,45 +1,30 @@
-# .dot FORMATTING
-# node [shape=circle] Node0 [label="0"];  COMMON NODE
-# node [shape=doublecircle] Node8 [label="8"]; END NODE
-# Node0 -> Node8 [label="a/b"]; a/b TRANSITION from 0 to 8
-
-from automata_util import get_automata_states
+class processedTransition:
+    def __init__(self, to, key):
+        self.to = to
+        self.key = key
 
 
-def write_nfa(automata):
-    pass
+class processedState:
+    def __init__(self, id, is_end, transitions):
+        self.id = id
+        self.is_end = is_end
+        self.transitions = transitions
 
 
-def write_dfa(automata):
+def write_automata(states, path):
+    transitions = []
+    with open(path) as file:
+        file.write("digraph { \n")
+        file.write("rankdir = \"LR\" \n")
+        for state in states:
+            shape = "circle"
+            if state.is_end:
+                shape = "doublecircle"
+            file.write("node [shape={}] Node{} [label=\"{}\"];\n".format(shape, state.id, state.id))
+            for transition in state.transitions:
+                transitions.append("Node{} -> Node{} [label=\"{}\"];".format(state.id, transition.to, transition.key))
 
-    file = open("dfa.dot", 'w+')
-    file.write("digraph { \n\n")
-
-    states = get_automata_states(automata)
-
-    name = '0'
-    nodes = dict()
-
-    for state in states:
-        shape = "circle"
-
-        if state.isEndState:
-            shape = "doublecircle"
-
-        file.write("node [shape="+shape+"] Node"+name+" [label=\""+name+"\"];\n")
-        nodes[state] = name
-
-    file.write("\n")
-
-    visited = set()
-
-    for state in states:
-        transitions = automata.transitions
-        actual = '0'
-        for label, transition in transitions:
-            if state not in visited:
-                file.write("Node"+nodes.get(state)+" -> Node"+nodes.get(transition)+" [label=\""+label+"\";")
-        visited.add(state)
-
-    file.write("}")
-    file.close()
+        file.write("\n\n")
+        for transition_str in transitions:
+            file.write(transition_str)
+        file.write("\n}")

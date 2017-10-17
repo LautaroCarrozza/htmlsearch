@@ -1,6 +1,7 @@
 import sys
 import os
 from automata_util import *
+from file_util import *
 from collections import defaultdict
 
 
@@ -105,10 +106,13 @@ def main():
 
     nd_automata, word_counter = build_automata(words)
     automata = full_determinize(nd_automata)
+
+    write_automata(nd_states, "nfa.dot")
+    write_automata(d_states, "dfa.dot")
+
     results = consume_files(automata, word_counter, directory, html_files)
     write_results(results, "index.txt")
 
-    # TODO draw nd_automata and automata
 
 
 if __name__ == '__main__':
