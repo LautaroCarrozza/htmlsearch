@@ -58,6 +58,10 @@ class AbstractAutomata:
     def __repr__(self):
         return str(self)
 
+    @abstractmethod
+    def reset(self):
+        pass
+
 
 class Automata(AbstractAutomata):
     """
@@ -90,6 +94,9 @@ class Automata(AbstractAutomata):
 
         traverse(self.init_state, 0)
         return '\n'.join(result_list)
+
+    def reset(self):
+        self.__current_state = self.init_state
 
 
 class NDAutomata(AbstractAutomata):
@@ -147,6 +154,9 @@ class NDAutomata(AbstractAutomata):
                            (word[char_index], {self.__add_word(word, reached_call, char_index + 1)}),
                            (OPEN_TAG, {self.tag_state})
                        ]))
+
+    def reset(self):
+        self.current_states = {self.init_state}
 
 
 class AbstractState:

@@ -11,12 +11,18 @@ def get_automata_states(automata):
     states = []
     next_states = []
     __get_automata_states(automata.init_state, states, next_states)
+    return states
 
 
 def __get_automata_states(current_state, states, next_states):
     if current_state not in states:
         states.append(current_state)
-        next_states.append(current_state.transitions.values())
+        transitions = current_state.transitions.values()
+        for transition in transitions:
+            if isinstance(current_state, NDState):
+                next_states.extend(transition)
+            elif isinstance(current_state, DState):
+                next_states.append(transition)
     if next_states:
         __get_automata_states(next_states.pop(), states, next_states)
     return states
