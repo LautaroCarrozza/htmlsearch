@@ -73,6 +73,7 @@ class Automata(AbstractAutomata):
         self.__current_state = init_state
 
     def consume(self, char):
+        char = char.upper()
         self.__current_state = self.current_state.get(char)
         self.__current_state.reached_call()
 
