@@ -124,6 +124,7 @@ class NDAutomata(AbstractAutomata):
         return self.current_states
 
     def consume(self, char):
+        char = char.upper()
         new_states = set()
         for state in self.current_states:
             for st in state.get(char):
@@ -138,7 +139,8 @@ class NDAutomata(AbstractAutomata):
         self.current_states = new_states
 
     def add_word(self, word, reached_call):
-        self.init_state.add_state(word[0], self.__add_word(word, reached_call, 1))
+        uword = word.upper()
+        self.init_state.add_state(uword[0], self.__add_word(uword, reached_call, 1))
 
     def __add_word(self, word, reached_call, char_index):
         if char_index == len(word):
