@@ -2,6 +2,8 @@ from abc import ABCMeta, abstractmethod
 
 LAMBDA = ''
 SPACE = ' '
+COMMA = ','
+DOT = '.'
 ENTER = '\n'
 OPEN_TAG = '<'
 CLOSE_TAG = '>'
@@ -116,6 +118,8 @@ class NDAutomata(AbstractAutomata):
         self.error_state = NDState(transitions=dict([
             (SPACE, {self.init_state}),
             (ENTER, {self.init_state}),
+            (COMMA, {self.init_state}),
+            (DOT, {init_state}),
             (OPEN_TAG, {self.tag_state})
         ]))
         self.init_state.transitions = dict([(OPEN_TAG, {self.tag_state})])
@@ -150,6 +154,8 @@ class NDAutomata(AbstractAutomata):
             return NDState(self.error_state, False, dict([
                 (SPACE, {final_state}),
                 (ENTER, {final_state}),
+                (COMMA, {final_state}),
+                (DOT, {final_state}),
                 (OPEN_TAG, {final_state_with_tag})
             ]))
         return NDState(self.error_state, False,
@@ -249,3 +255,5 @@ class NDState(AbstractState):
         if self.default_state is None:
             return self.transitions.get(char, {self})
         return self.transitions.get(char, {self.default_state})
+
+
