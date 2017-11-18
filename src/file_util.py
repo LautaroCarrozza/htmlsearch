@@ -44,6 +44,8 @@ def process_states(states):
             if state.default_state is not None:
                 default_id = get_state_id(state.default_state)
                 transition_list.append(ProcessedTransition(default_id, 'OTHER'))
+            else:
+                transition_list.append(ProcessedTransition(state_id, 'OTHER'))
         yield ProcessedState(state_id, state.is_end_state, transition_list)
 
 

@@ -149,7 +149,7 @@ class NDAutomata(AbstractAutomata):
 
     def __add_word(self, word, reached_call, char_index):
         if char_index == len(word):
-            final_state = NDState.end_state(None, reached_call, dict([(LAMBDA, {self.init_state})]))
+            final_state = NDState.end_state(self.init_state, reached_call, dict([(LAMBDA, {self.init_state})]))
             final_state_with_tag = NDState.end_state(self.tag_state, reached_call, dict([(LAMBDA, {self.tag_state})]))
             return NDState(self.error_state, False, dict([
                 (SPACE, {final_state}),

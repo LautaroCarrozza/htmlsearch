@@ -62,7 +62,7 @@ def consume_files(automata, word_counter, directory, html_files):
     for html_file in html_files:
         with open(build_path(directory, html_file)) as f:
             for line in f:
-                automata.consume_stream(line)
+                automata.consume_stream(line + '\n')
         for word, count in word_counter:
             results[word][html_file] = count
         word_counter.reset()
@@ -97,8 +97,8 @@ def main():
 
     html_files = []
 
-    for root, dirs, files in os.walk(directory):
-        for file in files:
+    for file in os.listdir(directory):
+        if os.path.isfile(os.path.join(directory, file)):
             if file.endswith('.html'):
                 html_files.append(file)
 

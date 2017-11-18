@@ -1,5 +1,6 @@
 from automata import *
 import copy
+from functools import reduce
 
 
 def get_automata_states(automata):
@@ -121,41 +122,57 @@ def determinize_automata(automata):
 
     state_dict = dict()
 
-    def powerset_construction(ndstate_equivalents, error_state=None):
+    def powerset_construction(ndstate_equivalents):
         if ndstate_equivalents not in state_dict:
-            reached_calls = []
-            for state in ndstate_equivalents:
-                if state.is_end_state:
-                    reached_calls.append(state.reached_call)
-
-            if error_state is None:
-                if len(reached_calls) > 0:
-                    initial_dstate = DState.end_state(default_state=None, reached_call=unify_functions(reached_calls))
-                else:
-                    initial_dstate = DState()
-                error_state = DState(transitions=dict([
-                    (SPACE, initial_dstate),
-                    (ENTER, initial_dstate),
-                    (OPEN_TAG, initial_dstate)
-                ]))
-                initial_dstate.default_state = error_state
-                new_state = initial_dstate
+            reached_calls = list(get_reached_calls(ndstate_equivalents))
+            if len(reached_calls) > 0:
+                new_state = DState.end_state(initial_dstate, unify_functions(reached_calls))
             else:
-                if len(reached_calls) > 0:
-                    new_state = DState.end_state(error_state, unify_functions(reached_calls))
+                has_default_state = reduce((lambda x, y: x or y.default_state is not None), ndstate_equivalents, False)
+                if has_default_state:
+                    new_error_state = error_state
                 else:
-                    new_state = DState(default_state=error_state)
+                    new_error_state = None
+                new_state = DState(default_state=new_error_state)
 
             state_dict[ndstate_equivalents] = new_state
 
             for transition, nds_eq in merge_transitions(ndstate_equivalents).items():
-                new_state.transitions[transition] = powerset_construction(frozenset(nds_eq), error_state)
+                new_state.transitions[transition] = powerset_construction(frozenset(nds_eq))
 
             return new_state
         else:
             return state_dict[ndstate_equivalents]
 
-    return Automata(powerset_construction(frozenset({automata.init_state})))
+    def get_reached_calls(equivalents):
+        return [state.reached_call for state in equivalents if state.is_end_state]
+
+    init_reached_calls = list(get_reached_calls({automata.init_state}))
+
+    if len(init_reached_calls) > 0:
+        initial_dstate = DState.end_state(default_state=None, reached_call=unify_functions(init_reached_calls))
+    else:
+        initial_dstate = DState()
+    tag_state = DState(transitions=dict([
+        (CLOSE_TAG, initial_dstate)
+    ]))
+    error_state = DState(transitions=dict([
+        (SPACE, initial_dstate),
+        (ENTER, initial_dstate),
+        (COMMA, initial_dstate),
+        (DOT, initial_dstate),
+        (OPEN_TAG, tag_state)
+    ]))
+    initial_dstate.transitions = dict([(OPEN_TAG, tag_state)])
+    nd_tag_state = next(iter(automata.init_state.transitions[OPEN_TAG]))
+
+    state_dict[frozenset({automata.init_state})] = initial_dstate
+    state_dict[frozenset({nd_tag_state})] = tag_state
+
+    for trans, equivalent in merge_transitions({automata.init_state}).items():
+        initial_dstate.transitions[trans] = powerset_construction(frozenset(equivalent))
+
+    return Automata(initial_dstate)
 
 
 def full_determinize(automata):
